@@ -1,10 +1,56 @@
 from socket import *
 import threading
+import random
+
+def Random(socket):
+    socket.send("Send two numbers seperated by a space".encode())
+    tempMessage = socket.recv(1024).decode()
+    tempMessage = tempMessage.strip().split(" ")
+    num1 = float (tempMessage[0])
+    num2 = float (tempMessage[1])
+    socket.send(f"Your random number between {tempMessage[0]} and {tempMessage[1]} is {random.uniform(num1, num2)}".encode())
 
 
-def RequestHandler(socket, requst):
-    if requst == 'help':
-        socket.send('Random'.encode())
+
+def Add(socket):
+    socket.send("Send two numbers seperated by a space\n".encode())
+    tempMessage = socket.recv(1024).decode()
+    tempMessage = tempMessage.strip().split(" ")
+    socket.send(f"{tempMessage[0]} + {tempMessage[1]} = {float (tempMessage[0]) + float (tempMessage[1])}".encode())
+
+
+def Subtract(socket):
+    socket.send("Send two numbers seperated by a space\n".encode())
+    socket.send("The first number should be the number that you want to subtract from".encode())
+    tempMessage = socket.recv(1024).decode()
+    tempMessage = tempMessage.strip().split(" ")
+    socket.send(f"{tempMessage[0]} - {tempMessage[1]} = {float (tempMessage[0]) - float (tempMessage[1])}".encode())
+
+
+def ContinuousService(socket):
+    returnMessage = ""
+    socket.send("Connection to the server established\n".encode())
+    socket.send('Send "help" for  a list of commands\n'.encode())
+    while True: 
+        tempMessage = socket.recv(1024).decode('latin-1')
+
+        commandReceiver = tempMessage.strip().lower()
+        print(commandReceiver)
+        match commandReceiver:
+            case 'random':
+                returnMessage = Random(socket)
+            case 'add':
+                returnMessage = Add(socket)
+            case 'subtract':
+                returnMessage = Subtract(socket)
+            case 'exit':
+                break
+            case _ : 
+                returnMessage = f'"{commandReceiver}" is not a recognized command\n'
+                socket.send(returnMessage.encode('latin-1'))
+    socket.send("Disconneting from server".encode())
+    socket.close()
+
 
 serverPort = 12345
 serverSocket = socket(AF_INET, SOCK_STREAM)
@@ -14,7 +60,4 @@ print("The server is ready to receive")
 while True:
     connectionSocket, addr = serverSocket.accept()
     print(f"Connection established with {addr}")
-    socket.send("Connection to the server established\n".encode())
-    socket.send('Send "help" for  a list of commands\n'.encode())
-    request = socket.recv(1024).decode()
-    threading.Thread(target=RequestHandler, args=(connectionSocket, request,)).start()
+    threading.Thread(target=ContinuousService, args=(connectionSocket,)).start()
