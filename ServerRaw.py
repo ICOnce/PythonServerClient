@@ -34,7 +34,7 @@ def ContinuousService(socket):
         tempMessage = socket.recv(1024).decode('latin-1')
 
         commandReceiver = tempMessage.strip().lower()
-        print(commandReceiver)
+        print("Command:" + commandReceiver)
         match commandReceiver:
             case 'random':
                 returnMessage = Random(socket)
@@ -47,6 +47,7 @@ def ContinuousService(socket):
             case _ : 
                 returnMessage = f'"{commandReceiver}" is not a recognized command\n'
         returnMessage += "\n"
+        print("Sent back: " + returnMessage)
         socket.send(returnMessage.encode('latin-1'))
     socket.send("Disconneting from server".encode())
     socket.close()
