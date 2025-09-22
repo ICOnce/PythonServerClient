@@ -1,13 +1,18 @@
 from socket import *
+import threading
+
+def Listener(socket):
+    while True:
+        response = socket.recv(1024).decode()
+        print(f'Response from server: {response}')
+
 clientSocket = socket(AF_INET, SOCK_STREAM)
 clientSocket.connect(('localhost', 12345))
-print("1 10".strip())
+threading.Thread(target=Listener, args=(clientSocket,)).start()
 while True:
-  request = input('Enter request: ')
-  clientSocket.send(request.encode())
-  response = clientSocket.recv(1024).decode()
-  print(f'Response from server: {response}')
-  if request.lower() == 'exit':
-      print('Exiting client.')
-      break
+    request = input()
+    clientSocket.send(request.encode())
+    if request.lower() == 'exit':
+        print('Exiting client.')
+        break
 clientSocket.close()
