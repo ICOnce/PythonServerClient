@@ -1,0 +1,56 @@
+from socket import *
+import threading
+import random
+import json
+
+def Random(socket, num1, num2):
+    return f"Your random number between {num1} and {num2} is {random.uniform(num1, num2)}"
+
+
+
+def Add(socket, num1, num2):
+    return f"{num1} + {num2} = {float (num1) + float (num2)}"
+
+
+def Subtract(socket, num1, num2):
+    return f"{num1} - {num2} = {float (num1) - float (num2)}"
+
+
+def ContinuousService(socket):
+    returnMessage = ""
+    socket.send("Connection to the server established\n".encode())
+    socket.send('Send "help" for  a list of commands\n'.encode())
+    while True: 
+        tempMessage = json.loads(socket.recv(1024).decode('latin-1'))
+        
+        commandReceiver = tempMessage["command"]
+        number1 = tempMessage["number1"]
+        number2 = tempMessage["number2"]
+        print("Command:" + commandReceiver)
+        match commandReceiver:
+            case 'random':
+                returnMessage = Random(socket, number1, number2)
+            case 'add':
+                returnMessage = Add(socket, number1, number2)
+            case 'subtract':
+                returnMessage = Subtract(socket, number1, number2)
+            case 'exit':
+                break
+            case _ : 
+                returnMessage = f'"{commandReceiver}" is not a recognized command\n'
+        returnMessage += "\n"
+        print("Sent back: " + returnMessage)
+        socket.send(returnMessage.encode('latin-1'))
+    socket.send("Disconneting from server".encode())
+    socket.close()
+
+
+serverPort = 12345
+serverSocket = socket(AF_INET, SOCK_STREAM)
+serverSocket.bind(('',serverPort))
+serverSocket.listen(1)
+print("The server is ready to receive")
+while True:
+    connectionSocket, addr = serverSocket.accept()
+    print(f"Connection established with {addr}")
+    threading.Thread(target=ContinuousService, args=(connectionSocket,)).start()
