@@ -3,6 +3,15 @@ import threading
 import random
 import json
 
+def IsNumber(s):
+    try:
+        float(s)
+        return true
+    except ValueError:
+        return false
+
+
+
 def Random(socket, num1, num2):
     return f"Your random number between {num1} and {num2} is {random.uniform(num1, num2)}"
 
@@ -18,30 +27,41 @@ def Subtract(socket, num1, num2):
 
 def ContinuousService(socket):
     returnMessage = ""
-    socket.send("Connection to the server established\n".encode())
-    socket.send('Send "help" for  a list of commands\n'.encode())
+    socket.send('{"message": "Connection to the server established\n"}'.encode())
+    socket.send('{"message": "Send \"help\" for  a list of commands\n"}'.encode())
     while True: 
         tempMessage = json.loads(socket.recv(1024).decode('latin-1'))
         
         commandReceiver = tempMessage["command"]
         number1 = tempMessage["number1"]
         number2 = tempMessage["number2"]
-        print("Command:" + commandReceiver)
-        match commandReceiver:
-            case 'random':
-                returnMessage = Random(socket, number1, number2)
-            case 'add':
-                returnMessage = Add(socket, number1, number2)
-            case 'subtract':
-                returnMessage = Subtract(socket, number1, number2)
-            case 'exit':
-                break
-            case _ : 
-                returnMessage = f'"{commandReceiver}" is not a recognized command\n'
-        returnMessage += "\n"
-        print("Sent back: " + returnMessage)
-        socket.send(returnMessage.encode('latin-1'))
-    socket.send("Disconneting from server".encode())
+        if IsNumber(number1) and IsNumber(number2):
+            print("Command:" + commandReceiver)
+            returnDict = json.dumps('{"status" : "", "message" : ""}')
+            match commandReceiver:
+                case 'random':
+                    returnDict["status"] = "Ok"
+                    returnDict["message"] = Random(socket, number1, number2)
+                case 'add':
+                    returnDict["status"] = "Ok"
+                    returnDict["message"] =  Add(socket, number1, number2)
+                case 'subtract':
+                    returnDict["status"] = "Ok"
+                    returnDict["message"] = Subtract(socket, number1, number2)
+                case 'exit':
+                    break
+                case _ : 
+                    returnDict["status"] = "error"
+                    returnDict["message"] = f'\"{commandReceiver}\" is not a recognized command\n'
+            returnDict["message"] += "\n"
+
+        else:
+            returnDict["status"] = "error"
+            returnDict["message"] = "you entered an invalid number"
+        print("Sent back: " + returnDict["message"])
+        socket.send(json.dumps(returnDict).encode())
+        
+    socket.send('{"messaage" : "Disconnecting from server", "status" : "service ended"}'.encode())
     socket.close()
 
 
